@@ -57,3 +57,19 @@ df.groupby('merchant_category').agg(
 df.groupby('merchant_category')['amount'].mean().sort_values(ascending=False)
 df.groupby('merchant_category')['amount'].max().sort_values(ascending=False)
 # %%
+# 1. The 5 fraud patterns breakdown (most important)
+df[df['is_fraud'] == 1]['fraud_type'].value_counts()
+
+# 2. Boolean flags vs fraud rate
+for col in ['is_online', 'is_recurring', 'is_international']:
+    print(df.groupby(col)['is_fraud'].mean())
+
+# 3. Amount distribution is misleading without log scale (fraud amounts span £2 to £1000+)
+df[df['is_fraud']==1]['amount'].plot(kind='hist', bins=50, log=True)
+
+# 4. Fraud rate by country
+df.groupby('merchant_country')['is_fraud'].mean()
+# %%
+unique_customers  = len(df['cardholder_id'].unique())
+print(f"Unique customers: {unique_customers}")
+# %%
