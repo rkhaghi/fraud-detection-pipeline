@@ -27,6 +27,16 @@ DROP_COLS = [
 
 
 def main():
+    # ── Extract model.tar.gz ──────────────────────────────────────────────
+    # SageMaker training packages /opt/ml/model/ into model.tar.gz
+    import tarfile
+    model_tar = os.path.join(MODEL_DIR, "model.tar.gz")
+    if os.path.exists(model_tar):
+        print(f"Extracting {model_tar}...")
+        with tarfile.open(model_tar) as tar:
+            tar.extractall(MODEL_DIR)
+        print(f"  Extracted: {os.listdir(MODEL_DIR)}")
+
     # ── Load model ────────────────────────────────────────────────────────
     model = XGBClassifier()
     model.load_model(os.path.join(MODEL_DIR, "model.json"))
