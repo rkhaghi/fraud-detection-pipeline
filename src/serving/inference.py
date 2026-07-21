@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+inmport numpy as np
 
 # Feature columns in the exact order used during training.
 # These must match the columns produced by build_feature_matrix() in sm_train.py.
