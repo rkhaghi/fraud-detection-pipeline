@@ -1,0 +1,53 @@
+name: CD — Deploy Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI — Lint & Test"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    env:
+      AWS_REGION: us-east-1
+      BUCKET: sagemaker-fraud-detection-rezaws
+      PIPELINE_NAME: fraud-detection-pipeline
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install boto3 sagemaker
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Upload scripts to S3
+        run: |
+          aws s3 cp src/sm_processing.py s3://$BUCKET/code/sm_processing.py
+          aws s3 cp src/sm_train.py s3://$BUCKET/code/sm_train.py
+          aws s3 cp src/sm_evaluate.py s3://$BUCKET/code/sm_evaluate.py
+          aws s3 cp src/engineering.py s3://$BUCKET/scripts/engineering.py
+
+      - name: Start pipeline execution
+        run: |
+          python -c "
+          import boto3
+          sm = boto3.client('sagemaker', region_name='us-east-1')
+          response = sm.start_pipeline_execution(PipelineName='${{ env.PIPELINE_NAME }}')
+          print(f'Pipeline started: {response[\"PipelineExecutionArn\"]}')
+          "

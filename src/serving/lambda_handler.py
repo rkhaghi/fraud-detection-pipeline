@@ -32,6 +32,7 @@ SNS_TOPIC_ARN = os.environ["SNS_TOPIC_ARN"]
 _runtime   = boto3.client("sagemaker-runtime", region_name=REGION)
 _dynamodb  = boto3.resource("dynamodb",        region_name=REGION)
 _sns       = boto3.client("sns",               region_name=REGION)
+_cw        = boto3.client("cloudwatch",        region_name=REGION)
 _table     = _dynamodb.Table(TABLE_NAME)
 
 
@@ -80,6 +81,18 @@ def _send_alert(txn: dict[str, Any], score: float) -> None:
     logger.info(f"Alert sent for {txn.get('transaction_id')}")
 
 
+def _publish_fraud_metric(is_fraud_flag: bool) -> None:
+    """Publish custom CloudWatch metric for fraud rate tracking."""
+    _cw.put_metric_data(
+        Namespace="FraudDetection/Custom",
+        MetricData=[{
+            "MetricName": "FraudDetected",
+            "Value": 1.0 if is_fraud_flag else 0.0,
+            "Unit": "Count",
+        }],
+    )
+
+
 def handler(event: dict, context: Any) -> dict:
     """
     Lambda entry point.
@@ -98,13 +111,16 @@ def handler(event: dict, context: Any) -> dict:
             score = _score_transaction(txn)
             _save_decision(txn, score)
 
-            if is_fraud(score):
+            fraud_flag = is_fraud(score)
+            _publish_fraud_metric(fraud_flag)
+
+            if fraud_flag:
                 logger.warning(f"FRAUD detected: {txn_id}  score={score:.4f}")
                 _send_alert(txn, score)
             else:
                 logger.info(f"Legit: {txn_id}  score={score:.4f}")
 
-            results.append({"transaction_id": txn_id, "score": score, "fraud": is_fraud(score)})
+            results.append({"transaction_id": txn_id, "score": score, "fraud": fraud_flag})
 
         except Exception as e:
             logger.error(f"Error processing record: {e}", exc_info=True)
