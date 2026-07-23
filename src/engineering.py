@@ -39,6 +39,7 @@ CITY_COORDS: dict[str, tuple[float, float]] = {
 # Private helpers — each takes a sorted df and returns it with new columns
 # ---------------------------------------------------------------------------
 
+
 def _add_recency_features(df: pd.DataFrame) -> pd.DataFrame:
     """Time since the cardholder's previous transaction (seconds).
     -1 for the very first transaction of each cardholder."""

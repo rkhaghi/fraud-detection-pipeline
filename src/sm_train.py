@@ -79,7 +79,12 @@ def main(args):
     precision, recall, thresholds = precision_recall_curve(y_val, y_prob)
     f1 = 2 * precision * recall / (precision + recall + 1e-9)
     best_idx = f1.argmax()
-    threshold = float(thresholds[best_idx]) if best_idx < len(thresholds) else 0.5
+    if args.threshold is not None:
+        threshold = args.threshold
+        print(f"Using fixed threshold: {threshold}")
+    else:
+        threshold = float(thresholds[best_idx]) if best_idx < len(thresholds) else 0.5
+        print(f"Using best F1 threshold: {threshold:.4f}")
 
     print(f"Val PR-AUC: {pr_auc:.4f}")
 
@@ -116,5 +121,7 @@ if __name__ == "__main__":
     parser.add_argument("--learning-rate",   type=float, default=0.05)
     parser.add_argument("--subsample",       type=float, default=0.8)
     parser.add_argument("--colsample-bytree",type=float, default=0.8)
+    parser.add_argument("--threshold",       type=float, default=None,
+                        help="Fixed decision threshold (0-1). If not set, best F1 threshold is used.")
     args = parser.parse_args()
     main(args)
