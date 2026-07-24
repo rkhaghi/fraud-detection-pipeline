@@ -1,3 +1,8 @@
+# Local documentation (not for repo)
+ARCHITECTURE.md
+AWS_COMMANDS.md
+MEDIUM_ARTICLE.md
+
 # Data — too large for git (store in S3 in production)
 Data/
 *.csv
